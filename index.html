@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonafide Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="shortcut icon" href="images.jpeg" type="image/x-icon">
+
+</head>
+<body>
+    <div class="container">
+        <div class="logo"><img src="https://tkrcet.ac.in/wp-content/themes/tkrcet/assets/images/logo-tkrcet.png" alt="logo"> </div>
+
+        <h2>Bonafide certificate Generator</h2>
+        <input type="text" id="name" placeholder="Enter your Name">
+        <input type="text" id="institution" placeholder="Enter your Institute Name">
+        <input type="text" id="purpose" placeholder="Enter purpose for certificate">
+        <button onclick="generatePDF()">Generate Pdf</button>
+
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
