@@ -14,7 +14,6 @@ function generatePDF() {
     doc.text(institution + ". This certificate is issued for " + purpose + ".", 20, 50);
     doc.text("Date: " + date, 20, 70);
     doc.text("Signature: B.Nageshwar Rao ", 20, 90);
-    doc.text("Head of the Department",20,40)
     
     doc.save("Bonafide_Certificate.pdf");
 }
