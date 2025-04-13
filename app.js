@@ -13,7 +13,7 @@ function generatePDF() {
     doc.text("This is to certify that " + name + " is a bonafide student of", 20, 40);
     doc.text(institution + ". This certificate is issued for " + purpose + ".", 20, 50);
     doc.text("Date: " + date, 20, 70);
-    doc.text("Signature: B.Nageshwar Rao ", 20, 90);
+    doc.text("Place: TKR COLLEGE ", 20, 90);
     
     doc.save("Bonafide_Certificate.pdf");
 }
