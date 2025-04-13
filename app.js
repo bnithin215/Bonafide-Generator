@@ -14,6 +14,7 @@ async function generatePDF() {
     const issueDate = new Date().toLocaleDateString();
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     doc.setFontSize(16);
     doc.text("Bonafide Certificate", 80, 20);
     doc.setFontSize(12);
@@ -24,6 +25,8 @@ async function generatePDF() {
     
     doc.save("Bonafide_Certificate.pdf");
 =======
+=======
+>>>>>>> Stashed changes
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.src = 'https://tkrcet.ac.in/wp-content/themes/tkrcet/assets/images/logo-tkrcet.png';
@@ -60,5 +63,8 @@ async function generatePDF() {
 
         doc.save("Bonafide_Certificate.pdf");
     };
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
