@@ -1,25 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bonafide Generator</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Bonafide Certificate Generator</title>
+    <link rel="stylesheet" href="styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="shortcut icon" href="images.jpeg" type="image/x-icon">
-
+    <link rel="shortcut icon" href="images.jpeg" type="image/x-icon" />
 </head>
 <body>
-    <div class="container">
-        <div class="logo"><img src="https://tkrcet.ac.in/wp-content/themes/tkrcet/assets/images/logo-tkrcet.png" alt="logo"> </div>
-
-        <h2>Bonafide certificate Generator</h2>
-        <input type="text" id="name" placeholder="Enter your Name">
-        <input type="text" id="institution" placeholder="Enter your Institute Name">
-        <input type="text" id="purpose" placeholder="Enter purpose for certificate">
-        <button onclick="generatePDF()">Generate Pdf</button>
-
+<div class="container">
+    <div class="logo">
+        <img src="https://tkrcet.ac.in/wp-content/themes/tkrcet/assets/images/logo-tkrcet.png" alt="TKR College Logo" />
     </div>
-    <script src="app.js"></script>
+
+    <h2>Bonafide Certificate Generator</h2>
+
+    <input type="text" id="name" placeholder="Enter Student Name" required />
+    <input type="text" id="rollno" placeholder="Enter Roll Number" required />
+    <input type="text" id="fathername" placeholder="Enter Father's Name" required />
+
+
+
+    <select id="department" required>
+        <option value="">Select Department</option>
+        <option value="Civil Engineering">Civil Engineering</option>
+        <option value="Electrical & Electronics Engineering">Electrical & Electronics Engineering</option>
+        <option value="Mechanical Engineering">Mechanical Engineering</option>
+        <option value="Electronics & Communication Engineering">Electronics & Communication Engineering</option>
+        <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+        <option value="CSE (AI & ML)">CSE (AI & ML)</option>
+        <option value="CSE (DS)">CSE (DS)</option>
+        <option value="Information Technology">Information Technology</option>
+        <option value="MBA">MBA</option>
+    </select>
+
+    <select id="course" required>
+        <option value="">Select Course</option>
+        <option value="I-I">I-I</option>
+        <option value="I-II">I-II</option>
+        <option value="II-I">II-I</option>
+        <option value="II-II">II-II</option>
+        <option value="III-I">III-I</option>
+        <option value="III-II">III-II</option>
+        <option value="IV-I">IV-I</option>
+        <option value="IV-II">IV-II</option>
+    </select>
+
+    <input type="text" id="academicyear" placeholder="Enter Academic Year (e.g., 2023-2024)" required />
+    <input type="date" id="dob" required />
+
+    <select id="purpose" required>
+        <option value="">Select Purpose</option>
+        <option value="Official">Official</option>
+        <option value="Scholarship">Scholarship</option>
+        <option value="Bus Pass">Bus Pass</option>
+    </select>
+
+    <select id="conduct" required>
+        <option value="">Select Conduct</option>
+        <option value="Satisfactory">Satisfactory</option>
+        <option value="Excellent">Excellent</option>
+        <option value="Good">Good</option>
+    </select>
+
+
+    <button onclick="generatePDF()">Generate PDF</button>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
