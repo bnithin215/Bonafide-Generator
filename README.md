@@ -12,7 +12,7 @@ A simple, efficient web-based tool to generate bonafide certificates for student
 
 ## 🚀 Live Demo
 
-🔗 [View Live Project](https://bnithin215.github.io/Bonafide-Generator/)
+🔗 [View Live Project](https://bonafide-generator.vercel.app/))
 
 ## 📂 Project Structure
 
