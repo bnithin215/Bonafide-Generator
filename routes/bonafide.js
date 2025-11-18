@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const BonafideRequest = require('../models/BonafideRequest');
+const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 
 // @route   POST /api/bonafide/request
@@ -30,7 +31,7 @@ router.post('/request', [
     }
 
     const bonafideRequest = await BonafideRequest.create({
-      user: req.user._id,
+      userId: req.user.id,
       ...req.body
     });
 
@@ -53,14 +54,28 @@ router.post('/request', [
 // @access  Private (User)
 router.get('/my-requests', protect, async (req, res) => {
   try {
-    const requests = await BonafideRequest.find({ user: req.user._id })
-      .sort({ createdAt: -1 })
-      .populate('approvedBy', 'name email');
+    const requests = await BonafideRequest.findByUserId(req.user.id);
+
+    // Populate approvedBy user info
+    const requestsWithApprover = await Promise.all(
+      requests.map(async (request) => {
+        if (request.approvedBy) {
+          const approver = await User.findById(request.approvedBy);
+          if (approver) {
+            request.approverInfo = {
+              name: approver.name,
+              email: approver.email
+            };
+          }
+        }
+        return request;
+      })
+    );
 
     res.status(200).json({
       success: true,
-      count: requests.length,
-      requests
+      count: requestsWithApprover.length,
+      requests: requestsWithApprover
     });
   } catch (error) {
     console.error('Get requests error:', error);
@@ -77,17 +92,47 @@ router.get('/my-requests', protect, async (req, res) => {
 router.get('/all-requests', protect, authorize('admin'), async (req, res) => {
   try {
     const { status } = req.query;
-    const filter = status ? { status } : {};
 
-    const requests = await BonafideRequest.find(filter)
-      .sort({ createdAt: -1 })
-      .populate('user', 'name email rollNumber department')
-      .populate('approvedBy', 'name email');
+    let requests;
+    if (status) {
+      requests = await BonafideRequest.findByStatus(status);
+    } else {
+      requests = await BonafideRequest.findAll({
+        orderBy: { field: 'createdAt', direction: 'desc' }
+      });
+    }
+
+    // Populate user and approvedBy info
+    const requestsWithInfo = await Promise.all(
+      requests.map(async (request) => {
+        const user = await User.findById(request.userId);
+        if (user) {
+          request.userInfo = {
+            name: user.name,
+            email: user.email,
+            rollNumber: user.rollNumber,
+            department: user.department
+          };
+        }
+
+        if (request.approvedBy) {
+          const approver = await User.findById(request.approvedBy);
+          if (approver) {
+            request.approverInfo = {
+              name: approver.name,
+              email: approver.email
+            };
+          }
+        }
+
+        return request;
+      })
+    );
 
     res.status(200).json({
       success: true,
-      count: requests.length,
-      requests
+      count: requestsWithInfo.length,
+      requests: requestsWithInfo
     });
   } catch (error) {
     console.error('Get all requests error:', error);
@@ -103,9 +148,7 @@ router.get('/all-requests', protect, authorize('admin'), async (req, res) => {
 // @access  Private
 router.get('/request/:id', protect, async (req, res) => {
   try {
-    const request = await BonafideRequest.findById(req.params.id)
-      .populate('user', 'name email rollNumber department')
-      .populate('approvedBy', 'name email');
+    const request = await BonafideRequest.findById(req.params.id);
 
     if (!request) {
       return res.status(404).json({
@@ -115,11 +158,33 @@ router.get('/request/:id', protect, async (req, res) => {
     }
 
     // Check if user owns this request or is admin
-    if (request.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (request.userId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this request'
       });
+    }
+
+    // Populate user info
+    const user = await User.findById(request.userId);
+    if (user) {
+      request.userInfo = {
+        name: user.name,
+        email: user.email,
+        rollNumber: user.rollNumber,
+        department: user.department
+      };
+    }
+
+    // Populate approver info
+    if (request.approvedBy) {
+      const approver = await User.findById(request.approvedBy);
+      if (approver) {
+        request.approverInfo = {
+          name: approver.name,
+          email: approver.email
+        };
+      }
     }
 
     res.status(200).json({
@@ -151,19 +216,16 @@ router.put('/approve/:id', protect, authorize('admin'), async (req, res) => {
       });
     }
 
-    request.status = 'approved';
-    request.approvedBy = req.user._id;
-    request.approvedAt = Date.now();
-    if (adminNotes) {
-      request.adminNotes = adminNotes;
-    }
-
-    await request.save();
+    const updatedRequest = await BonafideRequest.approve(
+      req.params.id,
+      req.user.id,
+      adminNotes || ''
+    );
 
     res.status(200).json({
       success: true,
       message: 'Request approved successfully',
-      request
+      request: updatedRequest
     });
   } catch (error) {
     console.error('Approve request error:', error);
@@ -190,18 +252,16 @@ router.put('/reject/:id', protect, authorize('admin'), async (req, res) => {
       });
     }
 
-    request.status = 'rejected';
-    request.approvedBy = req.user._id;
-    if (adminNotes) {
-      request.adminNotes = adminNotes;
-    }
-
-    await request.save();
+    const updatedRequest = await BonafideRequest.reject(
+      req.params.id,
+      req.user.id,
+      adminNotes || ''
+    );
 
     res.status(200).json({
       success: true,
       message: 'Request rejected',
-      request
+      request: updatedRequest
     });
   } catch (error) {
     console.error('Reject request error:', error);
@@ -227,14 +287,14 @@ router.delete('/request/:id', protect, async (req, res) => {
     }
 
     // Check if user owns this request or is admin
-    if (request.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (request.userId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this request'
       });
     }
 
-    await request.deleteOne();
+    await BonafideRequest.delete(req.params.id);
 
     res.status(200).json({
       success: true,

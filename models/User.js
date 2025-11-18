@@ -1,73 +1,138 @@
-const mongoose = require('mongoose');
+const FirestoreService = require('../services/firestore');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please provide a name'],
-    trim: true
-  },
-  email: {
-    type: String,
-    required: [true, 'Please provide an email'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
-  },
-  password: {
-    type: String,
-    required: [true, 'Please provide a password'],
-    minlength: 6,
-    select: false
-  },
-  role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
-  },
-  rollNumber: {
-    type: String,
-    trim: true
-  },
-  department: {
-    type: String,
-    trim: true
-  },
-  course: {
-    type: String,
-    trim: true
-  },
-  fatherName: {
-    type: String,
-    trim: true
-  },
-  dateOfBirth: {
-    type: String,
-    trim: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-}, {
-  timestamps: true
-});
-
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    return next();
+class UserModel {
+  constructor() {
+    this.db = new FirestoreService('users');
   }
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
+  /**
+   * Validate user data
+   */
+  validate(data) {
+    const errors = [];
 
-// Method to compare passwords
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
+    if (!data.name || data.name.trim() === '') {
+      errors.push('Please provide a name');
+    }
 
-module.exports = mongoose.model('User', userSchema);
+    if (!data.email || data.email.trim() === '') {
+      errors.push('Please provide an email');
+    } else if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(data.email)) {
+      errors.push('Please provide a valid email');
+    }
+
+    if (!data.password || data.password.length < 6) {
+      errors.push('Password must be at least 6 characters');
+    }
+
+    return errors;
+  }
+
+  /**
+   * Hash password
+   */
+  async hashPassword(password) {
+    const salt = await bcrypt.genSalt(10);
+    return await bcrypt.hash(password, salt);
+  }
+
+  /**
+   * Compare password with hash
+   */
+  async comparePassword(candidatePassword, hashedPassword) {
+    return await bcrypt.compare(candidatePassword, hashedPassword);
+  }
+
+  /**
+   * Create a new user
+   */
+  async create(userData) {
+    // Validate data
+    const errors = this.validate(userData);
+    if (errors.length > 0) {
+      throw new Error(errors.join(', '));
+    }
+
+    // Check if user already exists
+    const existingUser = await this.db.findOneByField('email', userData.email.toLowerCase());
+    if (existingUser) {
+      throw new Error('User already exists with this email');
+    }
+
+    // Hash password
+    const hashedPassword = await this.hashPassword(userData.password);
+
+    // Prepare user data
+    const user = {
+      name: userData.name.trim(),
+      email: userData.email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: userData.role || 'user',
+      rollNumber: userData.rollNumber?.trim() || '',
+      department: userData.department?.trim() || '',
+      course: userData.course?.trim() || '',
+      fatherName: userData.fatherName?.trim() || '',
+      dateOfBirth: userData.dateOfBirth?.trim() || ''
+    };
+
+    return await this.db.create(user);
+  }
+
+  /**
+   * Find user by ID
+   */
+  async findById(id) {
+    return await this.db.findById(id);
+  }
+
+  /**
+   * Find user by email
+   */
+  async findByEmail(email) {
+    return await this.db.findOneByField('email', email.toLowerCase());
+  }
+
+  /**
+   * Find user by email with password (for authentication)
+   */
+  async findByEmailWithPassword(email) {
+    const user = await this.findByEmail(email);
+    return user; // In Firestore, password is not excluded by default
+  }
+
+  /**
+   * Update user
+   */
+  async update(id, updateData) {
+    // Don't allow updating password or email through this method
+    delete updateData.password;
+    delete updateData.email;
+    delete updateData.role;
+
+    return await this.db.update(id, updateData);
+  }
+
+  /**
+   * Delete user
+   */
+  async delete(id) {
+    return await this.db.delete(id);
+  }
+
+  /**
+   * Get all users
+   */
+  async findAll(options = {}) {
+    return await this.db.findAll(options);
+  }
+
+  /**
+   * Count users
+   */
+  async count() {
+    return await this.db.count();
+  }
+}
+
+module.exports = new UserModel();

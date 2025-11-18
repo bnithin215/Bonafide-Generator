@@ -2,13 +2,14 @@ const User = require('../models/User');
 
 const createDefaultAdmin = async () => {
   try {
-    // Check if admin already exists
-    const adminExists = await User.findOne({ role: 'admin' });
+    // Check if admin already exists by email
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@tkrcollege.edu';
+    const adminExists = await User.findByEmail(adminEmail);
 
     if (!adminExists) {
       const admin = await User.create({
         name: 'Admin',
-        email: process.env.ADMIN_EMAIL || 'admin@tkrcollege.edu',
+        email: adminEmail,
         password: process.env.ADMIN_PASSWORD || 'admin123',
         role: 'admin'
       });
@@ -17,6 +18,8 @@ const createDefaultAdmin = async () => {
       console.log('Email:', admin.email);
       console.log('Password:', process.env.ADMIN_PASSWORD || 'admin123');
       console.log('⚠️  Please change the admin password after first login!');
+    } else {
+      console.log('Admin user already exists');
     }
   } catch (error) {
     console.error('Error creating default admin:', error.message);

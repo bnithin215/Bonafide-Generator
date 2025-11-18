@@ -36,16 +36,7 @@ router.post('/register', [
 
     const { name, email, password, rollNumber, department, course, fatherName, dateOfBirth } = req.body;
 
-    // Check if user already exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists with this email'
-      });
-    }
-
-    // Create user
+    // Create user (model handles duplicate check)
     const user = await User.create({
       name,
       email,
@@ -59,14 +50,14 @@ router.post('/register', [
     });
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -102,8 +93,8 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // Check if user exists (include password for comparison)
-    const user = await User.findOne({ email }).select('+password');
+    // Check if user exists with password
+    const user = await User.findByEmailWithPassword(email);
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -112,7 +103,7 @@ router.post('/login', [
     }
 
     // Check password
-    const isPasswordMatch = await user.comparePassword(password);
+    const isPasswordMatch = await User.comparePassword(password, user.password);
     if (!isPasswordMatch) {
       return res.status(401).json({
         success: false,
@@ -121,14 +112,14 @@ router.post('/login', [
     }
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.status(200).json({
       success: true,
       message: 'Login successful',
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -153,10 +144,17 @@ router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     res.status(200).json({
       success: true,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
